@@ -1,0 +1,5 @@
+#Vendor Dependencias
+vendor/
+
+# Variables de entorno
+.env
