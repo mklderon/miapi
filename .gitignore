@@ -1,5 +1,47 @@
-#Vendor Dependencias
-vendor/
+# Dependencias de Composer
+/vendor/
+composer.phar
+composer.lock
 
-# Variables de entorno
+# Archivos de configuración de entorno
 .env
+.env.*
+!.env.example
+
+# Archivos de caché y logs
+/logs/
+/cache/
+/tmp/
+*.log
+
+# Archivos de PHPUnit
+.phpunit.result.cache
+/phpunit.xml
+/coverage/
+
+# Archivos generados por IDE y editores
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+*.swp
+*.swo
+*~
+
+# Archivos temporales
+*.tmp
+*.bak
+*.backup
+
+# Archivos específicos de configuración local
+/config/local.php
+
+# Directorios de build
+/build/
+/dist/
+
+# Archivos de carga de usuario
+/uploads/
+/public/uploads/
