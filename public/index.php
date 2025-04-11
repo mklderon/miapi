@@ -36,7 +36,7 @@ function initializeApp(): \Slim\App
     $container->set('app', $app);
     
     // Configurar middleware
-    configureMiddleware($app);
+    configureMiddleware($app, $container);
     
     // Configurar rutas base
     configureBaseRoutes($app);
@@ -55,10 +55,17 @@ function initializeApp(): \Slim\App
  */
 function configureContainer(Container $container): void
 {
-    // Aquí puedes definir tus servicios y dependencias
-    // Nota: El objeto app se registrará después, en initializeApp()
+    // Incluimos el cargador de configuraciones
+    require_once __DIR__ . '/../src/config/config.php';
     
-    // Agrega más definiciones de servicios según sea necesario
+    // Registramos el servicio de configuración
+    $container->set('config', function($c) {
+        return function(string $configName) {
+            return loadConfig($configName);
+        };
+    });
+    
+    // Puedes añadir más servicios aquí según sea necesario
 }
 
 /**
@@ -67,14 +74,13 @@ function configureContainer(Container $container): void
  * @param \Slim\App $app
  * @return void
  */
-/**
- * Configura los middleware necesarios para la aplicación
- * 
- * @param \Slim\App $app
- * @return void
- */
-function configureMiddleware(\Slim\App $app): void 
+function configureMiddleware(\Slim\App $app, \DI\Container $container): void 
 {
+    // Obtenemos la configuración
+    $config = $container->get('config');
+    $appConfig = $config('app');
+    $corsConfig = $config('cors');
+    
     // Agregamos middleware para parsear el cuerpo de la solicitud en formato JSON
     $app->addBodyParsingMiddleware();
     
@@ -82,11 +88,10 @@ function configureMiddleware(\Slim\App $app): void
     $app->addRoutingMiddleware();
     
     // Agregamos middleware para manejar CORS
-    $app->add(new CorsMiddleware());
+    $app->add(new \App\Middleware\CorsMiddleware($corsConfig));
     
     // Determinar si estamos en producción o desarrollo
-    $environment = $_ENV['APP_ENV'] ?: 'development';
-    $isProduction = $environment === 'production';
+    $isProduction = $appConfig['env'] === 'production';
     
     // Configuración de los detalles de errores según el entorno
     $displayErrorDetails = !$isProduction; // false en producción, true en desarrollo
