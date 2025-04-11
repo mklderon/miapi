@@ -5,15 +5,20 @@ use Psr\Http\Message\ResponseInterface as Response;
 use App\Helpers\JsonResponse;
 use App\Helpers\DateHelper;
 use App\Middleware\JwtAuthMiddleware;
+use App\Repositories\UsuarioRepository;
 
 // Obtenemos las dependencias necesarias del contenedor
 $app = $container->get('app');
-$dbHelper = $container->get('dbHelper');
 $jwtHelper = $container->get('jwtHelper');
 $validator = $container->get('validator');
 
+// Registrar el repositorio en el contenedor
+$container->set('usuarioRepository', function ($container) {
+    return new UsuarioRepository($container->get('dbHelper'));
+});
+
 // Ruta de login
-$app->post('/api/login', function (Request $request, Response $response, $args) use ($container, $dbHelper, $jwtHelper) {
+$app->post('/api/login', function (Request $request, Response $response, $args) use ($container, $jwtHelper) {
     // Obtener los datos del cuerpo de la solicitud
     $data = $request->getParsedBody();
 
@@ -38,31 +43,14 @@ $app->post('/api/login', function (Request $request, Response $response, $args) 
         );
     }
     
-    // Buscar usuario por email
-    $user = $dbHelper->find('usuarios', [
-        'id_usuario', 
-        'cedula',
-        'nombre',
-        'apellidos',
-        'telefono',
-        'email', 
-        'rol',
-        'estado',
-        'permiso',        
-        'password', // Necesario para verificar
-        'created_at',
-        'updated_at'
-    ], [
-        'email' => $data['email']
-    ]);
+    // Usar el repositorio para verificar credenciales
+    $usuarioRepository = $container->get('usuarioRepository');
+    $user = $usuarioRepository->verificarCredenciales($data['email'], $data['password']);
     
-    // Verificar si el usuario existe y la contraseña es correcta
-    if (!$user || !password_verify($data['password'], $user['password'])) {
+    // Verificar si las credenciales son válidas
+    if (!$user) {
         return JsonResponse::error($response, 'Credenciales inválidas', [], 401);
     }
-    
-    // Remover la contraseña de los datos que se devolverán
-    unset($user['password']);
     
     // Generar token JWT
     $token = $jwtHelper->generateToken($user);
@@ -83,7 +71,7 @@ $app->post('/api/logout', function (Request $request, Response $response, $args)
 });
 
 // Creamos un grupo de rutas protegidas
-$app->group('/api/protected', function ($group) use ($dbHelper, $jwtHelper) {
+$app->group('/api/protected', function ($group) use ($jwtHelper) {
 
     // Ruta protegida que requiere autenticación
     $group->get('/user/profile', function (Request $request, Response $response, $args) {
@@ -97,7 +85,7 @@ $app->group('/api/protected', function ($group) use ($dbHelper, $jwtHelper) {
     });
 
     // Ruta para refrescar el token
-    $group->post('/refresh-token', function (Request $request, Response $response, $args) {
+    $group->post('/refresh-token', function (Request $request, Response $response, $args) use ($jwtHelper) {
         // Los datos del usuario están disponibles gracias al middleware
         $user = $request->getAttribute('user');
         
