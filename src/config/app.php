@@ -1,7 +1,11 @@
 <?php
+// Archivo: src/config/app.php
 
-// Convertir formato UTC±N a zonas horarias estándar de PHP
-function parseTimezone($timezone) {
+/**
+ * Convertir formato UTC±N a zonas horarias estándar de PHP
+ * Nota: Esta función es local al ámbito de este archivo
+ */
+$parseTimezone = function($timezone) {
     // Si ya es un identificador de zona horaria válido, usarlo directamente
     if (in_array($timezone, timezone_identifiers_list())) {
         return $timezone;
@@ -48,13 +52,16 @@ function parseTimezone($timezone) {
     
     // Si el formato no coincide, usar UTC como fallback
     return 'UTC';
-}
+};
+
+// Aplicar la función para obtener la zona horaria
+$timezone = $parseTimezone($_ENV['TIMEZONE'] ?? 'UTC');
 
 return [
     'name' => $_ENV['APP_NAME'] ?? 'Slim API',
     'env' => $_ENV['APP_ENV'] ?? 'development',
     'debug' => filter_var($_ENV['APP_DEBUG'] ?? true, FILTER_VALIDATE_BOOLEAN),
     'url' => $_ENV['APP_URL'] ?? 'http://localhost:4321/miapi',
-    'timezone' => parseTimezone($_ENV['TIMEZONE'] ?? 'UTC'),
+    'timezone' => $timezone,
     'version' => '1.0.0',
 ];
