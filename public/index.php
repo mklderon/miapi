@@ -15,6 +15,13 @@ require __DIR__ . '/../vendor/autoload.php';
 $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->load();
 
+// Cargar configuración de la aplicación
+require_once __DIR__ . '/../src/config/config.php';
+$appConfig = loadConfig('app');
+
+// Configurar zona horaria
+date_default_timezone_set($appConfig['timezone']);
+
 /**
  * Inicializa y configura la aplicación
  * 
