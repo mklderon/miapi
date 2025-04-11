@@ -65,6 +65,34 @@ function configureContainer(Container $container): void
         };
     });
     
+    // Configuramos Medoo como servicio en el contenedor usando la configuración
+    $container->set('db', function($c) {
+        $config = $c->get('config');
+        return new \Medoo\Medoo($config('database'));
+    });
+    
+    // Registramos el helper de base de datos
+    $container->set('dbHelper', function($c) {
+        return new \App\Helpers\DbHelper($c->get('db'));
+    });
+    
+    // Registramos el helper de JWT
+    $container->set('jwtHelper', function($c) {
+        $config = $c->get('config');
+        return new \App\Helpers\JwtHelper($config('jwt'));
+    });
+    
+    // Registramos el factory de validator
+    $container->set('validator', function($c) {
+        return function($data = null) {
+            // Si $data es null, usamos un array vacío
+            if ($data === null) {
+                $data = [];
+            }
+            return new \App\Helpers\Validator($data);
+        };
+    });
+    
     // Puedes añadir más servicios aquí según sea necesario
 }
 
