@@ -49,7 +49,7 @@ class JwtHelper
             'exp' => $expiration,       // Tiempo de expiración
             'iss' => $this->config['issuer'],  // Emisor
             'aud' => $this->config['audience'], // Audiencia
-            'uuid' => $userData['id_usuario']         // Datos del usuario por el momento solo id
+            'data' => $userData['id_usuario']         // Datos del usuario por el momento solo el id
         ];
         
         return JWT::encode($payload, $this->config['secret_key'], $this->config['algorithm']);
