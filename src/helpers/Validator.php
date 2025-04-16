@@ -2,6 +2,8 @@
 
 namespace App\Helpers;
 
+use App\Helpers\DbHelper;
+
 /**
  * Clase para validación de datos
  */
@@ -22,13 +24,22 @@ class Validator
     private $data = [];
     
     /**
+     * Instancia de DbHelper para consultas a la base de datos
+     *
+     * @var DbHelper
+     */
+    private $db;
+    
+    /**
      * Constructor
      *
      * @param array $data Datos a validar
+     * @param DbHelper $dbHelper Instancia del helper de base de datos
      */
-    public function __construct(array $data)
+    public function __construct(array $data, DbHelper $dbHelper = null)
     {
         $this->data = $data;
+        $this->db = $dbHelper;
     }
     
     /**
@@ -59,6 +70,54 @@ class Validator
         if (isset($this->data[$field]) && !empty($this->data[$field])) {
             if (!filter_var($this->data[$field], FILTER_VALIDATE_EMAIL)) {
                 $this->errors[$field] = $message ?? "El campo '{$field}' debe ser un email válido";
+            }
+        }
+        
+        return $this;
+    }
+    
+    /**
+     * Valida que un campo sea único en la base de datos
+     *
+     * @param string $field Campo a validar
+     * @param string $table Tabla donde verificar
+     * @param string $column Columna donde verificar (si es diferente al nombre del campo)
+     * @param mixed $exceptId ID del registro a excluir (para actualizaciones)
+     * @param string $exceptColumn Nombre de la columna de ID (por defecto 'id')
+     * @param string $message Mensaje de error personalizado
+     * @return Validator Instancia actual para encadenamiento
+     * @throws \Exception Si no se proporcionó una instancia de DbHelper
+     */
+    public function unique(
+        string $field, 
+        string $table, 
+        string $column = null, 
+        $exceptId = null, 
+        string $exceptColumn = 'id', 
+        string $message = null
+    ): Validator
+    {
+        // Verificar que tenemos una instancia de DbHelper
+        if (!$this->db) {
+            throw new \Exception('Se requiere una instancia de DbHelper para usar la validación unique');
+        }
+        
+        // Solo validar si el campo existe y no está vacío
+        if (isset($this->data[$field]) && !empty($this->data[$field])) {
+            // Si no se proporciona una columna, usar el nombre del campo
+            $column = $column ?? $field;
+            
+            // Construir las condiciones de búsqueda
+            $where = [$column => $this->data[$field]];
+            
+            // Agregar la condición de excepción si existe
+            if ($exceptId !== null) {
+                $where[$exceptColumn . '[!]'] = $exceptId;
+            }
+            
+            // Usar el método exists de DbHelper en lugar de query
+            if ($this->db->exists($table, $where)) {
+                $this->errors[$field] = $message ?? "El valor del campo '{$field}' ya existe";
             }
         }
         
