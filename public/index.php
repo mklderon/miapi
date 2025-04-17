@@ -89,13 +89,19 @@ function configureContainer(Container $container): void
     });
 
     // Registramos el factory de validator
-    $container->set('validator', function () {
-        return function ($data = null) {
+    $container->set('validator', function ($c) {
+        return function ($data = null, $dbHelper = null) use ($c) {
             // Si $data es null, usamos un array vacío
             if ($data === null) {
                 $data = [];
             }
-            return new \App\Helpers\Validator($data);
+            
+            // Si no se proporciona un DbHelper, usamos el del contenedor
+            if ($dbHelper === null) {
+                $dbHelper = $c->get('dbHelper');
+            }
+            
+            return new \App\Helpers\Validator($data, $dbHelper);
         };
     });
 
