@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\DateHelper;
 use App\Helpers\DbHelper;
 
 class clienteRepository

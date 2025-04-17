@@ -127,36 +127,6 @@ $app->group('/api/clientes', function ($group) use ($container, $validator) {
         );
     });
 
-    $group->get('/{id}', function (Request $request, Response $response, array $args) use ($container) {
-        return ControllerHelper::handleRequest(
-            function() use ($request, $response, $container, $args) {
-                // Obtener el ID del cliente
-                $id = (int)$args['id'];
-                
-                // Obtener el repositorio de clientes
-                $clienteRepository = $container->get('clienteRepository');
-                
-                // Buscar el cliente por ID
-                $cliente = $clienteRepository->getById($id);
-                
-                // Verificar si el cliente existe
-                if (!$cliente) {
-                    return JsonResponse::error($response,
-                        'Cliente no encontrado',
-                        ['id' => $id],
-                        404
-                    );
-                }
-                
-                // Retornar el cliente
-                return JsonResponse::success($response, [
-                    'message' => 'Cliente obtenido correctamente',
-                    'cliente' => $cliente
-                ]);
-            }, $response, 'Error al obtener el cliente'
-        );
-    });
-
     $group->get('/search', function (Request $request, Response $response) use ($container) {
         try {
             // $params = $request->getQueryParams();
@@ -237,6 +207,97 @@ $app->group('/api/clientes', function ($group) use ($container, $validator) {
                 500
             );
         }
+    });
+
+    $group->patch('/{id}/estado', function (Request $request, Response $response, array $args) use ($container, $validator) {
+        return ControllerHelper::handleRequest(
+            function() use ($request, $response, $container, $validator, $args) {
+                // Obtener el ID del cliente de los parámetros de la ruta
+                $id = (int)$args['id'];
+                
+                // Obtener los datos del cuerpo de la petición
+                $data = $request->getParsedBody();
+                
+                // Validar que el estado esté presente
+                if (!isset($data['estado'])) {
+                    return JsonResponse::error($response,
+                        'El estado es obligatorio',
+                        [],
+                        422
+                    );
+                }
+                
+                // Validar el valor del estado
+                $validator = $validator($data);
+                $validator->in('estado', ['activo', 'inactivo'], 'El estado debe ser activo o inactivo');
+                
+                // Si la validación falla, retornar errores
+                if ($validator->fails()) {
+                    return JsonResponse::error($response,
+                        'Error de validación',
+                        ['errors' => $validator->errors()],
+                        422
+                    );
+                }
+                
+                // Obtener el repositorio de clientes
+                $clienteRepository = $container->get('clienteRepository');
+                
+                // Verificar si el cliente existe
+                $clienteExistente = $clienteRepository->getById($id);
+                if (!$clienteExistente) {
+                    return JsonResponse::error($response,
+                        'Cliente no encontrado',
+                        ['id' => $id],
+                        404
+                    );
+                }
+                
+                // Actualizar solo el estado del cliente
+                $rowCount = $clienteRepository->updateStatus($id, $data['estado']);
+                
+                // Obtener el cliente actualizado
+                $cliente = $clienteRepository->getById($id);
+                
+                // Retornar respuesta exitosa
+                return JsonResponse::success($response, [
+                        'message' => 'Estado del cliente actualizado correctamente',
+                        'cliente' => $cliente,
+                        'rows_affected' => $rowCount
+                    ]
+                );
+            }, $response, 'Error al actualizar el estado del cliente'
+        );
+    });
+
+    $group->get('/{id}', function (Request $request, Response $response, array $args) use ($container) {
+        return ControllerHelper::handleRequest(
+            function() use ($request, $response, $container, $args) {
+                // Obtener el ID del cliente
+                $id = (int)$args['id'];
+                
+                // Obtener el repositorio de clientes
+                $clienteRepository = $container->get('clienteRepository');
+                
+                // Buscar el cliente por ID
+                $cliente = $clienteRepository->getById($id);
+                
+                // Verificar si el cliente existe
+                if (!$cliente) {
+                    return JsonResponse::error($response,
+                        'Cliente no encontrado',
+                        ['id' => $id],
+                        404
+                    );
+                }
+                
+                // Retornar el cliente
+                return JsonResponse::success($response, [
+                    'message' => 'Cliente obtenido correctamente',
+                    'cliente' => $cliente
+                ]);
+            }, $response, 'Error al obtener el cliente'
+        );
     });
 
     $group->put('/{id}', function (Request $request, Response $response, array $args) use ($container, $validator) {
@@ -345,67 +406,6 @@ $app->group('/api/clientes', function ($group) use ($container, $validator) {
                     ]
                 );
             }, $response, 'Error al actualizar el cliente'
-        );
-    });
-
-    $group->patch('/{id}/estado', function (Request $request, Response $response, array $args) use ($container, $validator) {
-        return ControllerHelper::handleRequest(
-            function() use ($request, $response, $container, $validator, $args) {
-                // Obtener el ID del cliente de los parámetros de la ruta
-                $id = (int)$args['id'];
-                
-                // Obtener los datos del cuerpo de la petición
-                $data = $request->getParsedBody();
-                
-                // Validar que el estado esté presente
-                if (!isset($data['estado'])) {
-                    return JsonResponse::error($response,
-                        'El estado es obligatorio',
-                        [],
-                        422
-                    );
-                }
-                
-                // Validar el valor del estado
-                $validator = $validator($data);
-                $validator->in('estado', ['activo', 'inactivo'], 'El estado debe ser activo o inactivo');
-                
-                // Si la validación falla, retornar errores
-                if ($validator->fails()) {
-                    return JsonResponse::error($response,
-                        'Error de validación',
-                        ['errors' => $validator->errors()],
-                        422
-                    );
-                }
-                
-                // Obtener el repositorio de clientes
-                $clienteRepository = $container->get('clienteRepository');
-                
-                // Verificar si el cliente existe
-                $clienteExistente = $clienteRepository->getById($id);
-                if (!$clienteExistente) {
-                    return JsonResponse::error($response,
-                        'Cliente no encontrado',
-                        ['id' => $id],
-                        404
-                    );
-                }
-                
-                // Actualizar solo el estado del cliente
-                $rowCount = $clienteRepository->updateStatus($id, $data['estado']);
-                
-                // Obtener el cliente actualizado
-                $cliente = $clienteRepository->getById($id);
-                
-                // Retornar respuesta exitosa
-                return JsonResponse::success($response, [
-                        'message' => 'Estado del cliente actualizado correctamente',
-                        'cliente' => $cliente,
-                        'rows_affected' => $rowCount
-                    ]
-                );
-            }, $response, 'Error al actualizar el estado del cliente'
         );
     });
 });

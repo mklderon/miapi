@@ -191,6 +191,24 @@ class Validator
         }
         
         return $this;
+    }    
+
+    /**
+     * Valida que un valor esté contenido en un conjunto de valores permitidos
+     *
+     * @param string $field Nombre del campo a validar
+     * @param array $allowedValues Array de valores permitidos
+     * @param string $message Mensaje de error
+     * @return $this
+     */
+    public function in(string $field, array $allowedValues, string $message = null): self
+    {
+        if (isset($this->data[$field]) && !in_array($this->data[$field], $allowedValues)) {
+            $message = $message ?? "El campo '$field' debe ser uno de los siguientes valores: " . implode(', ', $allowedValues);
+            $this->errors[$field][] = $message;
+        }
+        
+        return $this;
     }
     
     /**
